@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import Notiflix from 'notiflix';
 import * as API from '../API';
 import Button from './Button/Button';
@@ -7,37 +7,32 @@ import Loader from './Loader/Loader';
 import Modal from './Modal/Modal';
 import Searchbar from './Searchbar/Searchbar';
 
-class App extends Component {
-  state = {
-    images: [],
-    isLoading: false,
-    error: null,
-    query: '',
-    page: 1,
-    showModal: false,
-    selectedImages: null,
-    isLastPage: false,
-    totalPages: 0,
-  };
+function App() {
+  const [images, setImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isLastPage, setIsLastPage] = useState(false);
+  const [firstRender, setFirstRender] = useState(true);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
-    const { query: prevQuery, page: prevPage } = prevState;
-
-    if (query !== prevQuery || page !== prevPage) {
-      this.fetchGallery();
+  useEffect(() => {
+    if (!firstRender) {
+      fetchGallery();
+    } else {
+      setFirstRender(false);
     }
-  }
+  }, [query, page]);
 
-  loadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  fetchGallery = async () => {
-    const { query, page } = this.state;
-
+  const fetchGallery = async () => {
     try {
-      this.setState({ isLoading: true });
+      setIsLoading(true);
       const data = await API.getGallery(query, page);
 
       if (data.hits.length === 0) {
@@ -48,71 +43,54 @@ class App extends Component {
 
       const optimizedGallery = API.optimizedGallery(data.hits);
 
-      this.setState(prevState => ({
-        images: [...prevState.images, ...optimizedGallery],
-        isLastPage:
-          prevState.images.lenght + optimizedGallery.lenght >= data.totalHits,
-        error: null,
-        totalPages: Math.ceil(data.totalHits / API.perPage),
-      }));
+      setImages(prevImages => [...prevImages, ...optimizedGallery]);
+      setIsLastPage(images.length + optimizedGallery.length >= data.totalHits);
+      setError(null);
     } catch (error) {
-      this.setState({ error: error.message });
+      setError(error.message);
       Notiflix.Notify.failure('Sorry, something went wrong.');
     } finally {
-      this.setState({ isLoading: false });
+      setIsLoading(false);
     }
   };
 
-  handleSearchSubmit = query => {
-    if (this.state.query === query) {
+  const handleSearchSubmit = newQuery => {
+    if (query === newQuery) {
       return;
     }
 
-    this.setState({
-      query: query,
-      page: 1,
-      images: [],
-      error: null,
-      isLastPage: false,
-    });
+    setQuery(newQuery);
+    setPage(1);
+    setImages([]);
+    setError(null);
+    setIsLastPage(false);
   };
 
-  handleImageClick = image => {
-    this.setState({
-      selectedImages: image,
-      showModal: true,
-    });
+  const handleImageClick = image => {
+    setSelectedImage(image);
+    setShowModal(true);
   };
 
-  handleModalClsoe = () => {
-    this.setState({
-      selectedImages: null,
-      showModal: false,
-    });
+  const handleModalClose = () => {
+    setSelectedImage(null);
+    setShowModal(false);
   };
 
-  render() {
-    const { images, isLoading, error, showModal, selectedImages, isLastPage } =
-      this.state;
+  return (
+    <div>
+      <Searchbar onSubmit={handleSearchSubmit} />
+      {error && <p>Error: {error}</p>}
 
-    return (
-      <div>
-        <Searchbar onSubmit={this.handleSearchSubmit} />
-        {error && <p>Error: {error}</p>}
+      <ImageGallery images={images} onItemClick={handleImageClick} />
+      {isLoading && <Loader />}
 
-        <ImageGallery images={images} onItemClick={this.handleImageClick} />
-        {isLoading && <Loader />}
+      {!isLoading && images.length > 0 && !isLastPage && (
+        <Button onClick={loadMore} />
+      )}
 
-        {!isLoading && images.length > 0 && !isLastPage && (
-          <Button onClick={this.loadMore} />
-        )}
-
-        {showModal && (
-          <Modal image={selectedImages} onClose={this.handleModalClsoe} />
-        )}
-      </div>
-    );
-  }
+      {showModal && <Modal image={selectedImage} onClose={handleModalClose} />}
+    </div>
+  );
 }
 
 export default App;
