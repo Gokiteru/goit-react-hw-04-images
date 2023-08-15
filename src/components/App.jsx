@@ -18,18 +18,6 @@ function App() {
   const [isLastPage, setIsLastPage] = useState(false);
   const [firstRender, setFirstRender] = useState(true);
 
-  useEffect(() => {
-    if (!firstRender) {
-      fetchGallery();
-    } else {
-      setFirstRender(false);
-    }
-  }, [query, page]);
-
-  const loadMore = () => {
-    setPage(prevPage => prevPage + 1);
-  };
-
   const fetchGallery = async () => {
     try {
       setIsLoading(true);
@@ -52,6 +40,19 @@ function App() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (!firstRender) {
+      fetchGallery();
+    } else {
+      setFirstRender(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, page, firstRender]);
+
+  const loadMore = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
   const handleSearchSubmit = newQuery => {
