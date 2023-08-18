@@ -16,40 +16,36 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isLastPage, setIsLastPage] = useState(false);
-  const [firstRender, setFirstRender] = useState(true);
-
-  const fetchGallery = async () => {
-    try {
-      setIsLoading(true);
-      const data = await API.getGallery(query, page);
-
-      if (data.hits.length === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your request...'
-        );
-      }
-
-      const optimizedGallery = API.optimizedGallery(data.hits);
-
-      setImages(prevImages => [...prevImages, ...optimizedGallery]);
-      setIsLastPage(images.length + optimizedGallery.length >= data.totalHits);
-      setError(null);
-    } catch (error) {
-      setError(error.message);
-      Notiflix.Notify.failure('Sorry, something went wrong.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
-    if (!firstRender) {
-      fetchGallery();
-    } else {
-      setFirstRender(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, page, firstRender]);
+    const fetchGallery = async () => {
+      if (query !== '') {
+        try {
+          setIsLoading(true);
+          const data = await API.getGallery(query, page);
+
+          if (data.hits.length === 0) {
+            Notiflix.Notify.failure(
+              'Sorry, there are no images matching your request...'
+            );
+          }
+
+          const optimizedGallery = API.optimizedGallery(data.hits);
+
+          setImages(prevImages => [...prevImages, ...optimizedGallery]);
+          setIsLastPage(images.length + optimizedGallery.length >= data.totalHits);
+          setError(null);
+        } catch (error) {
+          setError(error.message);
+          Notiflix.Notify.failure('Sorry, something went wrong.');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchGallery();
+  }, [query, page]);
 
   const loadMore = () => {
     setPage(prevPage => prevPage + 1);
