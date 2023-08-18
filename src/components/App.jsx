@@ -15,7 +15,7 @@ function App() {
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isLastPage, setIsLastPage] = useState(false);
+  const [totalHits, setTotalHits] = useState(0);
 
   useEffect(() => {
     const fetchGallery = async () => {
@@ -33,7 +33,7 @@ function App() {
           const optimizedGallery = API.optimizedGallery(data.hits);
 
           setImages(prevImages => [...prevImages, ...optimizedGallery]);
-          setIsLastPage(images.length + optimizedGallery.length >= data.totalHits);
+          setTotalHits(data.totalHits);
           setError(null);
         } catch (error) {
           setError(error.message);
@@ -60,7 +60,7 @@ function App() {
     setPage(1);
     setImages([]);
     setError(null);
-    setIsLastPage(false);
+    setTotalHits(0);
   };
 
   const handleImageClick = image => {
@@ -81,7 +81,7 @@ function App() {
       <ImageGallery images={images} onItemClick={handleImageClick} />
       {isLoading && <Loader />}
 
-      {!isLoading && images.length > 0 && !isLastPage && (
+      {!isLoading && images.length > 0 && images.length < totalHits && (
         <Button onClick={loadMore} />
       )}
 
@@ -91,3 +91,4 @@ function App() {
 }
 
 export default App;
+
